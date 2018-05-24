@@ -20,31 +20,28 @@ This contains replication materials for the UW CSSS/STAT 564 project of Bowen Xi
 
 ## Install
 - `R`
-This project depends on [R](https://cran.r-project.org/) and [rstan](http://mc-stan.org/users/interfaces/rstan).
-You will need to install several R packages for this project:
+    This project depends on [R](https://cran.r-project.org/) and [rstan](http://mc-stan.org/users/interfaces/rstan). You will need to install several R packages for this project:
 
-[rstan install](https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started)
+    [rstan install](https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started)
 
-```r
-# List of the packages this project depends on
-packages <- c("tidyverse","forecast","loo","bayesplot","e1071","splines")
-if(!require(packages)){
-  install.packages(packages)
-  require(packages)
-}
-```
+    ```r
+    # List of the packages this project depends on
+    packages <- c("tidyverse","forecast","loo","bayesplot","e1071","splines")
+    if(!require(packages)){
+    install.packages(packages)
+    require(packages)
+    }
+    ```
 
 - `Python`
 
-A [RNN/LSTM](https://machinelearningmastery.com/time-series-forecasting-long-short-term-memory-network-python/) written in Python is also included for comparison.
+    A [RNN/LSTM](https://machinelearningmastery.com/time-series-forecasting-long-short-term-memory-network-python/) written in Python is also included for comparison.
 
-Either Python 2 or 3 is okay.
+    Either Python 2 or 3 is okay.
 
-You must have Keras (2.0 or higher) installed with either the TensorFlow or Theano backend.
+    You must have Keras (2.0 or higher) installed with either the TensorFlow or Theano backend.
 
-You also should have scikit-learn, Pandas, NumPy and Matplotlib installed.
-
-https://machinelearningmastery.com/setup-python-environment-machine-learning-deep-learning-anaconda/
+    You also should have scikit-learn, Pandas, NumPy and Matplotlib installed.
 
 ## Data
 
