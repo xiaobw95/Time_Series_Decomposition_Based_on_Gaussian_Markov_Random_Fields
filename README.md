@@ -4,6 +4,8 @@ This contains replication materials for the UW CSSS/STAT 564 project of Bowen Xi
 
 The project is about time series decomposition based on markov random fields, which is a locally adaptive nonparametric curve fitting method that operates within a fully Bayesian framework. I decomposited a time series into trend part, seasonal part and random part by treating it as an additive model and doing markov random fields fitting twice. I also compared the results with some classical parametric techniques, like ARIMA, and machine learning techniques, like RNN/LSTM, with regard to forcasting.
 
+Simulation study of GMRF and spatial model selection are also included.
+
 ## Organization
 
 -   `README.md`: This file, describing the content project.
@@ -47,7 +49,7 @@ The project is about time series decomposition based on markov random fields, wh
 
 ## Data
 
-Bike collision records in downtown Seattle from 01/2004 to 06/2017 counted by month, or that, the data contains 162 bike collision counts. Details could be seen at `data/TS.rda`.
+Bike collision records in downtown Seattle from 01/2004 to 06/2017 counted by month, or that, the data contains 162 bike collision counts. Details could be seen at `data/TS.rda`. Spatial data could be seen at `doc/STAT 504/data.csv`.
 
 ## Main Results
 
