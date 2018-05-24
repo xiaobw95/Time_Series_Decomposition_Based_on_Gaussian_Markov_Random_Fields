@@ -2,6 +2,8 @@
 
 This contains replication materials for the UW CSSS/STAT 564 project of Bowen Xiao (some materials of course projects of STAT 504 and STAT 527 are also included).
 
+The project is about time series decomposition based on markov random fields, which is a locally adaptive nonparametric curve fitting method that operates within a fully Bayesian framework. I decomposited a time series into trend part, seasonal part and random part by treating it as an additive model and doing markov random fields fitting twice. I also compared the results with some classical parametric techniques, like ARIMA, and machine learning techniques, like RNN/LSTM, with regard to forcasting.
+
 ## Organization
 
 -   `README.md`: This file, describing the content project.
@@ -46,6 +48,27 @@ This contains replication materials for the UW CSSS/STAT 564 project of Bowen Xi
 ## Data
 
 Bike collision records in downtown Seattle from 01/2004 to 06/2017 counted by month, or that, the data contains 162 bike collision counts. Details could be seen at `data/TS.rda`.
+
+## Main Results
+
+<p align="center">
+  <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/fig/Time-series-decomposition.png" alt=""/>
+</p>
+
+<p align="center">
+  <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/fig/Performance-of-prediction.png" alt=""/>
+</p>
+
+
+|Method|MSE|
+|--|--|
+|AUTO-ARIMA|160|
+|RNN/LSTM|110|
+|GMRF+LinearExpension|71|
+|GMRF+BSpline|38|
+|GMRF+SVM|73|
+
+
 
 ## Build
 
