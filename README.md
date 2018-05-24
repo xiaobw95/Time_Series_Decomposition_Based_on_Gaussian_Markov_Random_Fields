@@ -53,6 +53,8 @@ Bike collision records in downtown Seattle from 01/2004 to 06/2017 counted by mo
 
 ## Main Results
 
+- Time series decomposition and forcasting
+
 <p align="center">
   <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/fig/Time-series-decomposition.png" alt=""/>
 </p>
@@ -65,8 +67,26 @@ Bike collision records in downtown Seattle from 01/2004 to 06/2017 counted by mo
   <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/tables/mse.png" alt=""/>
 </p>
 
+- Simulation study of GMRF
+
+<p align="center">
+  <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/fig/simulation.png" alt=""/>
+</p>
+
+<p align="center">
+  <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/fig/mse-vs-sample-size.png" alt=""/>
+</p>
 
 
+- Spatial model selection
+
+<p align="center">
+  <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/fig/figure7.png" alt=""/>
+</p>
+
+<p align="center">
+  <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/fig/Rtable.png" alt=""/>
+</p>
 
 
 ## Build
