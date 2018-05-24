@@ -59,14 +59,11 @@ Bike collision records in downtown Seattle from 01/2004 to 06/2017 counted by mo
   <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/fig/Performance-of-prediction.png" alt=""/>
 </p>
 
+<p align="center">
+  <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/tables/mse.png" alt=""/>
+</p>
 
-|Method|MSE|
-|--|--|
-|AUTO-ARIMA|160|
-|RNN/LSTM|110|
-|GMRF+LinearExpension|71|
-|GMRF+BSpline|38|
-|GMRF+SVM|73|
+
 
 
 
