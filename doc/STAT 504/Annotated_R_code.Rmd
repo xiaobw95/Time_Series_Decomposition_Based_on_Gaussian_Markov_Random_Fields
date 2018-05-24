@@ -1,0 +1,223 @@
+---
+title: "Annotated complete R code for the project"
+author: 'Group 13: Bowen Xiao, Ezgi Irmak Yucel, Yiran Zhang'
+date: "2018-3-7"
+output:
+  pdf_document:
+    keep_tex: yes
+  html_document: default
+header-includes: \usepackage{booktabs} \usepackage{graphicx} \newcommand{\tabitem}{~~\llap{\textbullet}~~}
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Model selection
+```{r eval=F, echo=T}
+library(readr)
+fi<- read_csv("~/504 project/selected_data.csv")
+fi<-data.frame(r=as.factor(fi$roadcode),w=as.factor(fi$weathercode),ad=as.factor(fi$adcode),
+               l=as.factor(fi$lightcode),c=fi$accounts)
+```
+
+```{r message=FALSE, warning=FALSE}
+library(MASS)
+library(lmtest)
+library(pscl)
+library(faraway)
+load(file="~/.RData")
+```
+
+### 1.1 Poisson regression
+#### 1.1.1 Parametric estimation
+```{r}
+poi<-glm(c~.,data=fi,family = poisson)
+summary(poi)
+```
+#### 1.1.2 Significance of each covariate controlling for other covariates
+```{r}
+#likelihood ratio test
+p.no.ad <- glm(fi$c~fi$r+fi$w+fi$l,family=poisson)
+lrtest(p.no.ad, poi)
+p.no.w <-glm(fi$c~fi$r+fi$ad+fi$l,family=poisson)
+lrtest(p.no.w, poi)
+p.no.r <- glm(fi$c~fi$w+fi$ad+fi$l,family=poisson)
+lrtest(p.no.r, poi)
+p.no.l <-glm(fi$c~fi$r+fi$w+fi$ad,family=poisson)
+lrtest(p.no.l, poi)
+```
+
+### 1.2 Diagnostic
+#### 1.2.1 Overall goodness of fit
+```{r}
+# LR test for overall goodness of fit
+1-pchisq(poi$deviance,poi$df.residual)
+# AIC and BIC
+AIC(poi)
+BIC(poi)
+```
+#### 1.2.2 Evidences of overdispersion
+```{r}
+sum(residuals(poi,type="pearson")^2)/poi$df.res
+plot(log(fitted(poi)),
+log((fi$c-fitted(poi))^2),
+xlab=expression(log(hat(mu))),
+ylab=expression(log(y-hat(mu))^2))
+abline(0,1)
+```
+
+### 1.3 Solution A - interactions
+#### 1.3.1 Evidence of interaction
+```{r}
+light=fi$l
+weather=fi$w
+count=fi$c
+interaction.plot(light,weather,count,col=1:4,lwd=2,type="b",pch=1:4,cex=.7,
+                 main="Interaction plot")
+```
+
+#### 1.3.2 Poisson regression with interactions
+```{r warning=FALSE}
+pi<-glm(c~ad+w+r+l+l*w+r*w,data = fi,family = poisson)
+summary(pi)
+1-pchisq(pi$deviance,pi$df.residual)
+sum(residuals(pi,type="pearson")^2)/pi$df.res
+```
+
+### 1.4 Solution B - Zero-inflated model
+#### 1.4.1 Logistic regression to recognize 0
+```{r}
+loh <- glm((c==0) ~.,family=binomial(link='logit'),data=fi)
+fitted.results <- predict(loh,newdata=subset(fi,select=-c))
+fitted.results <- ifelse(fitted.results > 0.5,0,1)
+misClasificError <- mean(fitted.results != (fi$c!=0))
+1-misClasificError
+```
+#### 1.4.2 Zero-inflated Poisson regression
+```{r}
+n1<-zeroinfl(c~ad+w+r+l|ad+w+r+l,data=fi,EM=TRUE)
+summary(n1)
+sum(residuals(n1,type="pearson")^2)/n1$df.res
+```
+
+### 1.5 Solution C - Negative Binomial model
+#### 1.5.1 Parametric estimation
+```{r warning=FALSE}
+nb<-glm.nb(c~.,data=fi)
+summary(nb)
+# Comparing with Poisson regression
+odTest(nb)
+# LR test for overall goodness of fit
+1-pchisq(nb$deviance,nb$df.residual)
+# AIC and BIC
+AIC(nb)
+BIC(nb)
+```
+#### 1.5.2 Significance of each covariate controlling for other covariates
+```{r warning=FALSE}
+nb.no.ad <- glm.nb(c~r+w+l,data=fi)
+lrtest(nb.no.ad, nb)
+nb.no.w <- glm.nb(c~r+ad+l,data=fi)
+lrtest(nb.no.w, nb)
+nb.no.r <- glm.nb(c~w+ad+l,data=fi)
+lrtest(nb.no.r, nb)
+nb.no.l <- glm.nb(c~r+w+ad,data=fi)
+lrtest(nb.no.l, nb)
+```
+
+## 2. Visualization
+```{r message=FALSE, warning=FALSE}
+library(MASS)
+library(ggplot2)
+```
+
+### 2.1 Violin plot
+```{r}
+GeomSplitViolin <- ggproto("GeomSplitViolin", GeomViolin, draw_group = function(self, data, ..., draw_quantiles = NULL){
+  data <- transform(data, xminv = x - violinwidth * (x - xmin), xmaxv = x + violinwidth * (xmax - x))
+  grp <- data[1,'group']
+  newdata <- plyr::arrange(transform(data, x = if(grp%%2==1) xminv else xmaxv), if(grp%%2==1) y else -y)
+  newdata <- rbind(newdata[1, ], newdata, newdata[nrow(newdata), ], newdata[1, ])
+  newdata[c(1,nrow(newdata)-1,nrow(newdata)), 'x'] <- round(newdata[1, 'x']) 
+  if (length(draw_quantiles) > 0 & !scales::zero_range(range(data$y))) {
+    stopifnot(all(draw_quantiles >= 0), all(draw_quantiles <= 
+                                              1))
+    quantiles <- ggplot2:::create_quantile_segment_frame(data, draw_quantiles)
+    aesthetics <- data[rep(1, nrow(quantiles)), setdiff(names(data), c("x", "y")), drop = FALSE]
+    aesthetics$alpha <- rep(1, nrow(quantiles))
+    both <- cbind(quantiles, aesthetics)
+    quantile_grob <- GeomPath$draw_panel(both, ...)
+    ggplot2:::ggname("geom_split_violin", grid::grobTree(GeomPolygon$draw_panel(newdata, ...), quantile_grob))
+  }
+  else {
+    ggplot2:::ggname("geom_split_violin", GeomPolygon$draw_panel(newdata, ...))
+  }
+})
+geom_split_violin <- function (mapping = NULL, data = NULL, stat = "ydensity", position = "identity", ..., draw_quantiles = NULL, trim = TRUE, scale = "area", na.rm = FALSE, show.legend = NA, inherit.aes = TRUE) {
+  layer(data = data, mapping = mapping, stat = stat, geom = GeomSplitViolin, position = position, show.legend = show.legend, inherit.aes = inherit.aes, params = list(trim = trim, scale = scale, draw_quantiles = draw_quantiles, na.rm = na.rm, ...))
+}
+p<-ggplot(fi[fi$c<=5,], aes(x=fi[fi$c<=5,]$l, y=fi[fi$c<=5,]$c, fill=fi[fi$c<=5,]$ad)) 
+p+ geom_split_violin()+xlab('light')+ylab('count')+labs(fill = "address")+ggtitle('violin plot of light (count<=5) grouped by address')
+```
+
+### 2.2 Residual plot for linear regression
+```{r}
+typical<-lm(c~.,data=fi)
+ggplot(fi[residuals(typical)<=200,]) +
+  geom_density(aes(x = residuals(typical)[residuals(typical)<=200])) +
+  geom_rug(aes(x = residuals(typical)[residuals(typical)<=200], y = 0), position = position_jitter(height = 0))+ 
+  ggtitle( "Residual Density Plot of Typical Linear Regression Model") +  xlab("Residuals") +  stat_function(fun=dnorm, color="red", args=list(mean=mean(residuals(typical)), sd=sd(residuals(typical))))
+```
+
+### 2.3 LOWESS lines
+```{r}
+# typical
+plot(predict(typical, type="response"), residuals(typical), main="Typical Regression", ylab="Residuals", xlab="Fitted", ylim=c(-200,100))
+abline(h=0,lty=1,col="gray")
+lines(lowess(predict(typical,type="response"),residuals(typical)), lwd=2, lty=2)
+# poisson
+plot(predict(poi,type="response"),residuals(poi), main="Poisson Regression",
+     ylab="Residuals", xlab="Fitted", ylim=c(-200,100))
+abline(h=0,lty=1,col="gray")
+lines(lowess(predict(poi,type="response"),residuals(poi)),lwd=2, lty=2)
+# negative binomial
+plot(predict(nb,type="response"),residuals(nb), main="Negative Binomial Regression", ylab="Residuals", xlab="Fitted", ylim=c(-200,100))
+abline(h=0,lty=1,col="gray")
+lines(lowess(predict(nb,type="response"),residuals(nb)), lwd=2, lty=2)
+```
+
+### 2.4 Performance
+```{r}
+# Fitted values for Poisson regression
+h1=predprob(poi)
+h1<-apply(h1,2,mean)
+h1[1]*128
+sum(h1[2:6])*128
+(1-sum(h1[1:11]))*128
+# Fitted values for Negative Binomial regression
+h2=predprob(nb)
+h2<-apply(h2,2,mean)
+h2[1]*128
+sum(h2[2:6])*128
+(1-sum(h2[1:11]))*128
+# Fitted values for Linear regression
+sum(tp<0.5)
+sum(tp>=0.5&tp<5.5)
+sum(tp>=5.5&tp<10.5)
+sum(tp>10.5)
+
+C=c(rep(0,69),rep(1,28),rep(2,7),rep(3,24))
+T=c(52,2,0,74)
+P=c(67,23,9,29)
+N=c(70,24,7,27)
+
+hist(C,freq=FALSE,breaks=seq(0-0.5, 3+.5, 1),col = "gray90",xlab = "Skips Category", ylim=c(0,.8),
+     main='Comparison of actual and fitted category counts')
+lines(seq(0,3,1),T/sum(T),type = "b", lwd=2, lty=1,col=1)
+lines(seq(0,3,1),P/sum(P),type = "b", lwd=2, lty=1,col=3)
+lines(seq(0,3,1),N/sum(N),type = "b", lwd=2, lty=1,col=2)
+legend(1, 0.7, c("Typical (Normal)","Poisson", "Negative Binomial"), lty=seq(1:5), col =
+         c(1,3,2), lwd=2)
+```
+
+
