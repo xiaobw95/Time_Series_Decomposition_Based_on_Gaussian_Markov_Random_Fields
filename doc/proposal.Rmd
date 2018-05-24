@@ -1,0 +1,40 @@
+---
+title: "Time Series Decomposition Based on Markov Random Fields"
+author: "Bowen Xiao"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Project Motivation
+
+The project is about time series decomposition based on markov random fields, which is a locally adaptive nonparametric curve fitting method that operates within a fully Bayesian framework. I am going to decomposite a time series into trend part, seasonal part and random part. I am thinking of treating it as an additive model and decompositing it by doing markov random fields fitting twice. I am going to compare the results with some classical parametric techniques, like ARIMA, and machine learning techniques, like RNN/LSTM. Furthermore, I am going to apply the decomposition into forcasting.
+
+## Data Description
+
+I have data of bike collision records in downtown Seattle from 01/2004 to 06/2017 and I summarize them by month, so that I have 162 bike collision counts, which is shown as following.
+
+```{r}
+load("~/2018-research-project/data/TS.rda")
+plot(TS,ylab='Bike Collision Counts',lwd=2)
+```
+
+## Bayesian Method
+
+The model assumes that each data point is generated independently with some parametirc models, like Poisson distributions, and the parameters are follow a markov random fields model, which could, according to the refered paper, provide a combination of local adaptation and global control. For example, supposed $Y_i\sim Poisson(\theta_i)$, where $i=1,2,...,n$, and $(\theta_{i+1}-\theta_i)|\tau_i\sim N(0,\tau_i^2)$, where $i=1,2,...,n-1$, and $\tau_i$ are independent and identically distributed.  
+
+## Challenge
+
+One challenge, for prediction task, is how to use the trend line. I have the following two ideas: first is to use a parametric function to describe the trend line; Second is to choose a window so that I could use the "most recent" data to predict "future".
+
+## Reference
+
+[1]Faulkner, James R.; Minin, Vladimir N. Locally Adaptive Smoothing with Markov Random Fields and Shrinkage Priors. Bayesian Anal. 13 (2018), no. 1, 225--252. doi:10.1214/17-BA1050. https://projecteuclid.org/euclid.ba/1487905413
+

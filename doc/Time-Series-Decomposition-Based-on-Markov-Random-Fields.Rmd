@@ -1,0 +1,52 @@
+---
+title: "Time Series Decomposition Based on Markov Random Fields"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: 
+  html_document: default
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The full instructions for the research project are provided [here](https://uw-csss-564.github.io/2018/pages/research_project/). This file is a template to help you organize it. Delete any instructional text.
+
+Succinctly describe the computational narrative.
+
+# Setup
+
+Load packages you will use the analysis.
+Do not install any package here; it is impolite to install packages or change anything outside the project directory without the user's consent.
+```{r setup,message=FALSE}
+library("tidyverse")
+```
+
+You should also load data, define options or constant variables, or define utility functions in this section.
+
+R markdown will always use the directory of the file as the working directory when rendering. 
+This can be annoying since if the R markdown document is in a subdirectory, this will be different than the project working directory. I suggest using the **here** package for always constructing file paths relative to the root directory. 
+You can read more about this [here](https://github.com/jennybc/here_here).
+```{r paths}
+data_dir <- here::here("data")
+results_dir <- here::here("results")
+src_dir <- here::here("src")
+```
+
+
+# Rest of the paper
+
+Organize the rest of the computational narrative as appropriate.
+
+Use sections to organize the computational narrative, similar to how you would use them in a research article.
+Do not use sections merely to make text bold.
+
+There should be no extraneous messages, warnings, or errors in the output. Use `message = FALSE` to suppress printing  message output, and resolve all warnings and errors in your code.
+
+# Original Computational Environment
+
+```{r}
+sessionInfo()
+```

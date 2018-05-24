@@ -1,0 +1,259 @@
+---
+title: "Recent Work"
+author: "Bowen Xiao"
+date: "May 16, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+load(".RData")
+```
+
+```{r}
+library(rstan)
+library(loo)
+library(mice)
+library(Kendall)
+library(trend)
+library(forecast)
+```
+
+## Time series decomposition
+
+I use GMRF twice to do time series decomposition. Firstly, I use GMRF to fit a smoothing line. I split the line by bandwidth of 12 (since I know the period is 12 month), and avarage the difference with the mean in each piece. So that I get the seasonal component. Secondly, I minus the raw data with seasonal component and do another GMRF fitting on it, which turns out to be the trend component. 
+ 
+```{r eval=F}
+# first fitting
+test<-list(J=150,y=tts)
+TT<-stan('src/stan/Gaussian.stan', data=test, chains=nchain, iter=niter, warmup=nburn, thin=nthin,
+         control=list(adapt_delta=0.95, max_treedepth=12))
+TT.N<-matrix(unlist(extract(TT,pars=c("theta"))),nrow = 2500, byrow = FALSE)
+theta<-apply(TT.N,2,median)
+
+# extract seasonal component
+temp=c()
+for (i in 1:12){temp=c(temp,rep(mean(theta[1:150][(1+12*(i-1)):(12+12*(i-1))]),12))}
+temp=c(temp,rep(mean(theta[145:150]),6))
+temp=test$y-temp
+seasonal<-c()
+for (i in 1:12){seasonal<-c(seasonal,mean(temp[seq(i,150,12)]))}
+seasonal<-rep(seasonal,length=150)
+
+# second fitting
+test1 <- list(J = 150, y = test$y-seasonal)
+TT1<-stan('src/stan/Gaussian1.stan', data=test1, chains=nchain, iter=niter, warmup=nburn, thin=nthin,
+         control=list(adapt_delta=0.95, max_treedepth=12))
+TT.N1<-matrix(unlist(extract(TT1,pars=c("theta"))),nrow = 2500, byrow = FALSE)
+theta1<-apply(TT.N1,2,median)
+
+# extract trend component
+trend=theta1
+random=tts-seasonal-trend
+```
+
+My decomposition will look like the following.
+
+```{r}
+par(mfrow=c(3,1), mar=c(2,1.5,1.5,1), oma=c(2,2,0,0))
+plot(trend,type='l')
+plot(seasonal,type='l')
+plot(random,type='l')
+```
+
+As a comparison, decomposition based on ARIMA looks like the following.
+
+```{r}
+par(mfrow=c(1,1))
+plot(decompose(TS))
+```
+
+I choose step length based on cross validation. And then I sum up the seasonal component with a linear extension of trend component as my prediction.
+
+```{r}
+#step_width<-select_StepLength(trend,seasonal,random)
+mean((predict(lm(y~.,data=data.frame(y=trend[(150-step_width+1):150],x=c((150-step_width+1):150))),
+              newdata=data.frame(x=c(151:162)))+seasonal[139:150]-TS[151:162])^2)
+```
+
+Things could be better if I choose to discribe the 'trend' in a parametric form.
+
+```{r warning=FALSE,message=FALSE}
+library(splines)
+
+tr<-data.frame(y=trend,x=1:150)
+loocv<-c()
+for (i in 3:10){
+  cv<-c()
+  for (j in 1:150){
+    temp<-tr[-j,]
+    long_line<-lm(y~bs(x,df=i),data=temp)
+    cv<-c(cv,abs(predict(long_line,newdata=data.frame(x=j))-trend[j]))
+  }
+  loocv<-c(loocv,mean(cv))
+}
+long_line<-lm(y~bs(x,df=which.min(loocv)+2),data=tr)
+mean((seasonal[139:150]+predict(long_line,newdata = data.frame(x=c(151:162)))-TS[151:162])^2)
+```
+
+Or
+
+```{r warning=FALSE,message=FALSE}
+tcv<-c()
+for (i in 3:10){
+  cv<-c()
+  for (j in 1:5){
+    temp<-tr[1:(nrow(tr)-j),]
+    long_line<-lm(y~bs(x,df=i),data=temp)
+    cv<-c(cv,abs(predict(long_line,newdata=data.frame(x=c((nrow(tr)-j+1):nrow(tr))))-trend[j]))
+  }
+  tcv<-c(tcv,mean(cv))
+}
+long_line1<-lm(y~bs(x,df=which.min(tcv)+2),data=tr)
+mean((seasonal[139:150]+predict(long_line1,newdata = data.frame(x=c(151:162)))-TS[151:162])^2)
+```
+
+Add some magic weights,
+
+```{r warning=FALSE,message=FALSE}
+long_line2<-lm(y~bs(x,df=which.min(tcv)+2),data=tr,weights = c(rep(100,147),rep(1,3)))
+mean((seasonal[139:150]+predict(long_line2,newdata = data.frame(x=c(151:162)))-TS[151:162])^2)
+```
+
+As a comparison, predictions based on raw sampling, ARIMA and RNN are shown as following.
+
+```{r}
+mean((theta[151:162]-TS[151:162])^2)
+# arim <- auto.arima(ts(tts,start=c(2004,1),frequency=12),stepwise=FALSE,approximation=FALSE)
+# ari<-forecast(arim,h=12)
+mean((ari$mean-TS[151:162])^2)
+mean((rnn-TS[151:162])^2)
+```
+
+
+## Bayes diagnostic
+
+Horseshoe prior seems to have a little issue.
+
+```{r}
+check_hmc_diagnostics(TT)
+check_hmc_diagnostics(TT1)
+check_hmc_diagnostics(TTL)
+check_hmc_diagnostics(TTH)
+```
+
+Gaussian prior seems to be the best choice here.
+
+```{r}
+library("loo")
+log_lik_1 <- extract_log_lik(TT)
+log_lik_2 <- extract_log_lik(TTL)
+log_lik_3 <- extract_log_lik(TTH)
+loo1 <- loo(log_lik_1)
+loo2 <- loo(log_lik_2)
+loo3 <- loo(log_lik_3)
+compare(loo1,loo2,loo3)
+
+lpd_point <- cbind(
+  loo1$pointwise[,"elpd_loo"],
+  loo2$pointwise[,"elpd_loo"],
+  loo3$pointwise[,"elpd_loo"]
+)
+(stacking_wts <- stacking_weights(lpd_point))
+
+waic1<-waic(log_lik_1)
+waic2<-waic(log_lik_2)
+waic3<-waic(log_lik_3)
+compare(waic1,waic2,waic3)
+```
+
+And some poor-organized plot for GMRF based on Gaussian prior.
+
+```{r}
+traceplot(TT,pars=c('theta[1]'))
+plot(TT,pars=c('theta'))
+plot(TT, plotfun = "rhat")
+```
+
+## Simulation
+
+```{r eval=F}
+oneSim <- function(n = 100, scen = "a") {
+  if(scen == "a") {
+    f <- function(x){2*x}
+  } else if(scen == "b") {
+    f <- function(x){sin(10*x)}
+  }
+  x <- sort(runif(n))
+  y <- f(x) + rnorm(n)
+
+
+  # Polynomial Models
+  yh3 <- lm(y~poly(x,3))$fitted.values
+
+  # Ndaraya-Watson Models
+  h <- n^(-1/5)
+  yh6 <- ksmooth(x, y, kernel = "box", bandwidth = h)$y
+  yh7 <- ksmooth(x, y, kernel = "normal", bandwidth = h)$y
+
+  # Markov Random Fields with Shrinkage Priors
+  test<-list(J=n,y=y)
+  test$N <- length(test$y)
+  test$xvar1 <- 1:test$N
+  uxv1 <- unique(test$xvar1)
+  ruxv1 <- rank(uxv1)
+  m.xv <- cbind(1:length(uxv1), uxv1, ruxv1)
+  m.xv <- m.xv[order(m.xv[,2]),]
+  duxv1 <- diff(m.xv[,2])
+  suxv1 <- sort(uxv1)
+  rnk.xv <- integer(test$N)
+  for (ii in 1:test$N){
+    rnk.xv[ii] <- ruxv1[which(uxv1==test$xvar1[ii])]
+  }
+  test$J <- length(uxv1)
+  test$duxvar1 <- duxv1
+  test$xrank1 <- rnk.xv
+  TT<-stan('src/stan/Gaussian1.stan', data=test, chains=nchain, iter=niter, warmup=nburn, thin=nthin,
+           control=list(adapt_delta=0.95, max_treedepth=12))
+  yh8 <- matrix(unlist(extract(TT,pars=c("theta"))),nrow = 2500, byrow = FALSE)
+  yh8 <- apply(yh8,2,median)
+
+  mse <- colMeans( (cbind(yh3,yh6,yh7,yh8) - f(x))^2 )
+  names(mse) <- c("Poly Deg: 3", "NW-Box","NW-Gaussian","GMRF")
+  mse
+}
+
+multipleSim <- function(n = 100, scen = "a", nsim = 10) {
+  set.seed(1)
+  all.mse <- replicate(nsim, oneSim(n, scen))
+  apply(all.mse, 1, mean)
+}
+
+n.seq <- seq(100, 500, by = 100)
+
+# Simulation Results A
+simA <- sapply(n.seq, FUN = multipleSim, scen = "a", nsim = 10)
+resA <- data.frame("MSE" = as.numeric(simA),
+                   "Method" = rep(rownames(simA), 10),
+                   "n" = rep(n.seq, each = 4),
+                   "Scenario" = rep("Scenario a", 40))
+
+# Simulation Results B
+simB <- sapply(n.seq, FUN = multipleSim, scen = "b", nsim = 10)
+resB <- data.frame("MSE" = as.numeric(simB),
+                   "Method" = rep(rownames(simB), 10),
+                   "n" = rep(n.seq, each = 4),
+                   "Scenario" = rep("Scenario b", 40))
+```
+
+```{r message=FALSE}
+library(ggplot2)
+#dat <- rbind(resA, resB)
+ggplot(dat, mapping = aes(x = n, y = MSE, color = Method)) +
+  geom_line() + facet_wrap(~Scenario, scales = "free") + scale_y_log10()
+```
+
+As is shown, GMRF appeals to have some advantages as a non-parametric regression method.
