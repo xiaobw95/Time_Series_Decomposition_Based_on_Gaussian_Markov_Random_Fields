@@ -38,15 +38,15 @@ zsigma &\sim uniform(0,1); \\
 zgam &\sim uniform(0, 1);\\
 ztheta1 &\sim normal(0, 1);\\
 zdelta &\sim normal(0, 1);\\
-sigma &= 5.0*tan(zsigma*pi()/2);\\
-gam &= 0.06*tan(zgam*pi()/2);\\
+sigma &= 5.0*tan(zsigma*\pi/2);\\
+gam &= 0.06*tan(zgam*\pi/2);\\
 theta_1 &= 5*sd(y)*ztheta1 + \bar{y};\\
 theta_{j+1} &= gam*zdelta_j + theta_j;\\
 y_i &\sim normal(theta_i, sigma);
 \end{aligned}
 $$
 
-I choose the above non-centered parameterization to achieve better sampling performance, because centered parameterized model draws bad samples in simulation study. The idea of Bayesian Markov random fields comes from the paper in the reference. This project includes the following two parts, simulation study of Gaussian Markov random fileds (GMRF) fitting and time series decomposition based on Markov random fiels. 
+The idea of Bayesian Markov random fields comes from the paper in the reference[1]. This project includes the following two parts, simulation study of Gaussian Markov random fileds (GMRF) fitting and time series decomposition based on Markov random fiels. For time series decomposition, since it is count variable, in the first fitting I replace $y_i \sim normal(theta_i, sigma)$ with $y_i \sim Poisson(e^{theta_i}, sigma)$. As is well known, Bayes methods treat parameters as random variables. consequently, what we get is posterior distribution of $\theta$. To compare with frequentist methods, I will simply use the median of $\theta$. Furthermore, I choose the above non-centered parameterization to achieve better sampling performance, because centered parameterized model is found to have divergence issue in simulation study. 
 
 ## Data Description
 
@@ -68,7 +68,7 @@ I run the full simulation study for  each of the 2 functions $f(x)$, and I calcu
 
 My choice of bandwidth for NW estimators is motivated by the *optimal* bandwidth, which states that the optimal bandwidth should be $h_* = Cn^{-1/5}$ where the constant $C$ depends on the function $f$, variance of noise, and density of $x_i$. In this simulation, to keep things simple, we just take $C = 1$.
 
-```{r message=FALSE,echo=FALSE}
+```{r message=FALSE,echo=FALSE,fig.height=3.5}
 library(ggplot2)
 ggplot(resA, mapping = aes(x = n, y = MSE, color = Method)) +
   geom_line() + facet_wrap(~Scenario, scales = "free") + scale_y_log10()
@@ -76,7 +76,7 @@ ggplot(resB, mapping = aes(x = n, y = MSE, color = Method)) +
   geom_line() + facet_wrap(~Scenario, scales = "free") + scale_y_log10()
 ```
 
-As is shown,  GMRF fitting performs worst in the linear scenario but appeals to have some advantages in nonlinear scenario. Actually, the idea GMRF is very similar with some well-used nonparametric estimators, like KNN and NW estimators, because they all localized the fitting. The difference is GMRF always treats $\{x_i,y_i\}$ as a sequence and it seems to be more flexible with the regularization assumptions of $f$, which is why I consider to apply it into time series. The referenced paper includes plenty of simulation study. One example fitting of mine is shown as following.
+As is shown,  GMRF fitting performs worst in the linear scenario but appeals to have some advantages in nonlinear scenario. Actually, the idea GMRF is very similar with some well-used nonparametric estimators, like KNN and NW estimators, because they all focus on local information. The difference is GMRF always treats $\{x_i,y_i\}$ as a sequence and it seems to be more flexible with the regularization assumptions of $f$, which is why I consider to apply it into time series. The referenced paper shows plenty of simulation study, including smoothing functions and piecewise constant function[1]. One example of my fitting is shown as following.
 
 ```{r message=FALSE,echo=FALSE}
 plot(x,y,col='grey',xlim=c(0,1),ylim=c(-4,4),ylab='y')
@@ -98,7 +98,7 @@ legend('topright', legend=c('TRUE','GMRF',"Poly Deg: 3", "NW-Box","NW-Gaussian")
 
 I apply GMRF fitting into time series decomposition and forcasting. Firstly, I use GMRF to fit a smoothing line. I split the line by bandwidth of 12 (since I know the period is 12 month), and avarage the difference with the mean in each piece. So that I get the seasonal component. Secondly, I minus the raw data with seasonal component and do another GMRF fitting on it, which turns out to be the trend component. For the first fitting, $y$ is Poisson distributed because it is count variable, but for the second fitting I use normal distribution.
 
-I try three priors in first fitting: Gaussian prior, Laplace prior and Horseshoe prior. Horseshoe has 2.08% divergences, while Gaussian prior and Laplace Prior show no problems of sampling. And I compare them based on LOO-PSIS-CV and WAIC.
+I try three priors in first fitting: Gaussian prior, Laplace prior and Horseshoe prior. Horseshoe has 2.08% divergences, while Gaussian prior and Laplace Prior show no problems of sampling. And I compare them based on LOO-PSIS-CV and WAIC[2].
 
 ```{r echo=FALSE}
 library(knitr)
@@ -110,27 +110,42 @@ Both LOO-PSIS-CV and WAIC shows model based on Gaussian prior is the best. Thus,
 
 The trace of $theta_1$ in the sampling can be shown as following.
 
-```{r echo=FALSE}
+```{r echo=FALSE,fig.height=3.5}
 traceplot(TT,pars=c('theta[1]'))
 ```
 
-The overlapping lines show that the samples from 4 different chains are comming from one common distribution, or that, there is no violation for $theta_1$. The conclusion is also true for other parameters, because as we can see in the following, all the $\hat{R}s$ are close to 1.
+The overlapping lines show that the samples from 4 different chains are comming from one common distribution, or that, there is no violation for $theta_1$. The conclusion is also true for other parameters, because as we can see in the following, all the $\hat{R}s$ are close to 1[3].
 
-```{r echo=FALSE}
+```{r echo=FALSE,fig.height=3.5}
 plot(TT, plotfun = "rhat")
 ```
 
-95% credible interval of $log(E[y_i])$ can be shown as following.
+95% credible interval of $\theta$ can be shown as following.
 
 ```{r echo=FALSE}
-plot(TT,pars=c('theta'))
+plot_trend1(theta=extract_theta(TT,obstype='poisson'), obstype="poisson", obsvar=TS, xvar=1:162, main="first GMRF fitting", xlab="time", ylab="count")
 ```
 
 The last 12 points is simulated. As we can see, using these simulated data points to make prediction is not a wise choice. So the second fitting is necessary.
 
-After second fitting, my decomposition will look like the following.
+Similarly, here are the results of second fitting.
+
+```{r echo=FALSE,fig.height=3.5}
+traceplot(TT1,pars=c('theta[1]'))
+```
+
+```{r echo=FALSE,fig.height=3.5}
+plot(TT1, plotfun = "rhat")
+```
 
 ```{r echo=FALSE}
+plot_trend1(theta=extract_theta(TT1,obstype='normal'), obstype="normal", obsvar=test$y-seasonal, xvar=1:150, main="second GMRF fitting", xlab="time", ylab="")
+```
+
+
+After second fitting, my decomposition will look like the following.
+
+```{r echo=FALSE,fig.height=3.5}
 par(mfrow=c(3,1), mar=c(2,1.5,1.5,1), oma=c(2,2,0,0))
 plot(trend,type='l')
 plot(seasonal,type='l')
@@ -139,7 +154,7 @@ plot(random,type='l')
 
 As a comparison, decomposition based on ARIMA looks like the following.
 
-```{r echo=FALSE}
+```{r echo=FALSE,fig.height=3.5}
 par(mfrow=c(1,1))
 plot(decompose(TS))
 ```
@@ -179,10 +194,29 @@ legend('topright', legend=c('Observation','AUTO-ARIMA','RNN/LSTM','GMRF+LE','GMR
 kable(data.frame(Method=c("AUTO-ARIMS","RNN/LSTM","GMRF+LinearExtension","GMRF+BSpline","GMRF+SVM"),MSE=round(c(A4,A5,A1,A2,A3),1)))
 ```
 
+As is shown above, GMRF obviously outperforms the other methods, and using B-splines to fit the trend line seems to be the best choice.
+
 
 ## Discussion
+
+### Conclusion
+
+As is mentioned above, GMRF is a powerful nonparametric regression method which can also be applied into time series. It has a good chance to catch various characteristic features of interests, like  autocorrelation structure and periodic component. Combining GMRF and B-splines achieves really nice results, which is beyond my proposal. 
+
+In fact, priors have a shrinkage effect, which can also be seen as a kind of regularization. when it comes to MLE, ridge regression is equivalent to Gaussian prior, and Lasso regression is equivalent to Laplace prior. Under Bayesian framework, we are more flexible to choose from different kinds of priors.
+
+When it comes to model structure, GMRF is a realization of partial-pooling model. The connections between $\theta_i$ is limited by distance, which balances local adaptation and global control. A partial-pooling model is always a good idea, bacause it is more flexible than a fully-pooling model and more controllable than a non-pooling model. It is a tradeoff of bias and variance.
+
+### Limitation
+
+The main issue here is computational efficience. Bayesian method is time-consuming. In simulation study, for example, it takes totally about an hour to sample. And Horseshoe prior has a more extreme problem of it than Gaussian prior and Laplace prior. Moreover, if we try funtions like $y=sin(100x)$, divergence issues raise up. 
+
+My idea is to take advantages of both fitting power of Bayesian frameworks and computational efficience of frequentist methos. firstly, we should never let a Bayesian model to deal with a too complicated function fitting. Alternatively, we may use method like B-splines with knots to do a quick pilot fitting, and then run a divide and conquer algorithm with Bayesian model. Secondly, a Bayesian method could be a correction to a frequentist method, and vice versa. Actually, `GMRF+BSpline` is an example of realization. Another idea is to leave a mangeable amount of data for Bayesian model and fit a freqentist model with the rest data. And then include the results of frequentist model as priors. Besides, A general idea of ensemble learning is also appealing to me.
 
 
 ## Reference
 
 [1]Faulkner, James R.; Minin, Vladimir N. Locally Adaptive Smoothing with Markov Random Fields and Shrinkage Priors. Bayesian Anal. 13 (2018), no. 1, 225--252. doi:10.1214/17-BA1050. https://projecteuclid.org/euclid.ba/1487905413
+[2]Vehtari, A., Gelman, A., and Gabry, J. (2017a). Practical Bayesian model evaluation using leaveone-out cross-validation and WAIC. Statistics and Computing. 27(5), 1413–1432. doi:10.1007/s11222-
+016-9696-4. (published version, arXiv preprint).
+[3]Gelman, A. and D. B. Rubin (1992) Inference from iterative simulation using multiple sequences (with discussion). Statistical Science, 7:457-511
