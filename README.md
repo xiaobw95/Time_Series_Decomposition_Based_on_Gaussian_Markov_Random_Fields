@@ -30,7 +30,7 @@ Simulation study of GMRF and spatial model selection are also included.
 
     ```r
     # List of the packages this project depends on
-    packages <- c("tidyverse","forecast","loo","bayesplot","e1071","splines")
+    packages <- c("tidyverse","forecast","loo","bayesplot","e1071","splines","prophet")
     if(!require(packages)){
     install.packages(packages)
     require(packages)
