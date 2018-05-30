@@ -34,19 +34,19 @@ The project is about Markov random fields, which is a locally adaptive nonparame
 
 $$
 \begin{aligned}[t]
-zsigma &\sim uniform(0,1); \\
-zgam &\sim uniform(0, 1);\\
-ztheta1 &\sim normal(0, 1);\\
-zdelta &\sim normal(0, 1);\\
-sigma &= 5.0*tan(zsigma*\pi/2);\\
-gam &= 0.06*tan(zgam*\pi/2);\\
-theta_1 &= 5*sd(y)*ztheta1 + \bar{y};\\
-theta_{j+1} &= gam*zdelta_j + theta_j;\\
-y_i &\sim normal(theta_i, sigma);
+z\sigma &\sim uniform(0,1); \\
+z\gamma &\sim uniform(0, 1);\\
+z\theta 1 &\sim normal(0, 1);\\
+z\delta &\sim normal(0, 1);\\
+\sigma &= 5.0*tan(z\sigma*\pi/2);\\
+\gamma &= 0.06*tan(z\gamma*\pi/2);\\
+\theta_1 &= 5*sd(y)*z\theta 1 + \bar{y};\\
+\theta_{j+1} &= \gamma*z\delta_j + \theta_j;\\
+y_i &\sim normal(\theta_i, \sigma);
 \end{aligned}
 $$
 
-The idea of Bayesian Markov random fields comes from the paper in the reference[1]. This project includes the following two parts, simulation study of Gaussian Markov random fileds (GMRF) fitting and time series decomposition based on Markov random fiels. For time series decomposition, since it is count variable, in the first fitting I replace $y_i \sim normal(theta_i, sigma)$ with $y_i \sim Poisson(e^{theta_i}, sigma)$. As is well known, Bayes methods treat parameters as random variables. consequently, what we get is posterior distribution of $\theta$. To compare with frequentist methods, I will simply use the median of $\theta$. Furthermore, I choose the above non-centered parameterization to achieve better sampling performance, because centered parameterized model is found to have divergence issue in simulation study. 
+The idea of Bayesian Markov random fields comes from the paper in the reference[1]. This project includes the following two parts, simulation study of Gaussian Markov random fileds (GMRF) fitting and time series decomposition based on Markov random fiels. For time series decomposition, since it is count variable, in the first fitting I replace $y_i \sim normal(\theta_i, sigma)$ with $y_i \sim Poisson(e^{\theta_i}, \sigma)$. As is well known, Bayes methods treat parameters as random variables. consequently, what we get is posterior distribution of $\theta$. To compare with frequentist methods, I will simply use the median of $\theta$. Furthermore, I choose the above non-centered parameterization to achieve better sampling performance, because centered parameterized model is found to have divergence issue in simulation study. 
 
 ## Data Description
 
