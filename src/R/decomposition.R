@@ -141,9 +141,18 @@ arim <- auto.arima(ts(tts,start=c(2004,1),frequency=12),stepwise=FALSE,approxima
 ari<-forecast(arim,h=12)
 mean((ari$mean-TS[151:162])^2)
 
+
 #results from RNN/LSTM
 load("/src/Python/prediction-rnn.rda")
 mean((rnn-TS[151:162])^2)
+
+#results from Prophet
+library(prophet)
+ph<-prophet(data.frame(y=tts, ds=seq(ISOdate(2004,1,1), by = "month", length.out = 150)))
+pfuture <- make_future_dataframe(ph, periods = 12)
+pforecast <- predict(ph, pfuture)
+mean((pforecast$yhat[151:162]-TS[151:162])^2)
+prophet_plot_components(ph, pforecast)
 
 #comparison
 plot(c(151:162),TS[151:162],ylim=c(10,75),type='l',main='Performance of prediction',xlab='time',ylab='count')
