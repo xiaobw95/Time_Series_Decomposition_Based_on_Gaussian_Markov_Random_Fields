@@ -30,16 +30,17 @@ niter <- (ntotsamp/nchain)*nthin + nburn
 #Gaussian prior
 TT<-stan('src/stan/Gaussian.stan', data=test, chains=nchain, iter=niter, warmup=nburn, thin=nthin,
          control=list(adapt_delta=0.95, max_treedepth=12))
-TT.N<-matrix(unlist(extract(TT,pars=c("theta"))),nrow = 2500, byrow = FALSE)
-TT.N<-exp(TT.N)
-theta<-apply(TT.N,2,median)
-mean((theta[151:162]-TS[151:162])^2)
 #Laplace prior
 TTL<-stan('src/stan/Laplace.stan', data=test, chains=nchain, iter=niter, warmup=nburn, thin=nthin,
           control=list(adapt_delta=0.95, max_treedepth=12))
 #Horseshoe prior
 TTH<-stan('src/stan/Horseshoe.stan', data=test, chains=nchain, iter=niter, warmup=nburn, thin=nthin,
           control=list(adapt_delta=0.95, max_treedepth=12))
+
+TT.N<-matrix(unlist(extract(TTL,pars=c("theta"))),nrow = 2500, byrow = FALSE)
+TT.N<-exp(TT.N)
+theta<-apply(TT.N,2,median)
+mean((theta[151:162]-TS[151:162])^2)
 
 
 #extract seasonal component
@@ -75,6 +76,11 @@ tmp.dat <<- test1
 #second fitting with Gaussian prior
 TT1<-stan('src/stan/Gaussian1.stan', data=test1, chains=nchain, iter=niter, warmup=nburn, thin=nthin,
          control=list(adapt_delta=0.95, max_treedepth=12))
+TT2<-stan('src/stan/Laplace1.stan', data=test1, chains=nchain, iter=niter, warmup=nburn, thin=nthin,
+          control=list(adapt_delta=0.95, max_treedepth=12))
+TT3<-stan('src/stan/Horseshoe1.stan', data=test1, chains=nchain, iter=niter, warmup=nburn, thin=nthin,
+          control=list(adapt_delta=0.95, max_treedepth=12))
+
 TT.N1<-matrix(unlist(extract(TT1,pars=c("theta"))),nrow = 2500, byrow = FALSE)
 theta1<-apply(TT.N1,2,median)
 
@@ -100,7 +106,6 @@ mean((predict(lm(y~.,data=data.frame(y=trend[(150-step_width+1):150],x=c((150-st
 #use B-spline to fit trend line
 library(splines)
 tr<-data.frame(y=trend,x=1:150)
-#one
 loocv<-c()
 for (i in 3:10){
   cv<-c()
@@ -113,20 +118,6 @@ for (i in 3:10){
 }
 long_line<-lm(y~bs(x,df=which.min(loocv)+2),data=tr)
 mean((seasonal[139:150]+predict(long_line,newdata = data.frame(x=c(151:162)))-TS[151:162])^2)
-
-#
-tcv<-c()
-for (i in 3:10){
-  cv<-c()
-  for (j in 1:5){
-    temp<-tr[1:(nrow(tr)-j),]
-    long_line<-lm(y~bs(x,df=i),data=temp)
-    cv<-c(cv,abs(predict(long_line,newdata=data.frame(x=c((nrow(tr)-j+1):nrow(tr))))-trend[j]))
-  }
-  tcv<-c(tcv,mean(cv))
-}
-long_line1<-lm(y~bs(x,df=which.min(tcv)+2),data=tr)
-mean((seasonal[139:150]+predict(long_line1,newdata = data.frame(x=c(151:162)))-TS[151:162])^2)
 
 #use SVM to fit trend line
 library(e1071)
