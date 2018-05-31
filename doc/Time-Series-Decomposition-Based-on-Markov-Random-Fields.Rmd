@@ -1,49 +1,235 @@
 ---
 title: "Time Series Decomposition Based on Markov Random Fields"
-author: "Your Name"
-date: "`r Sys.Date()`"
-output: 
-  html_document: default
+author: "Bowen Xiao"
+date: "May 16, 2018"
+output:
   pdf_document:
     latex_engine: xelatex
+  html_document: default
+linkcolor: blue
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-The full instructions for the research project are provided [here](https://uw-csss-564.github.io/2018/pages/research_project/). This file is a template to help you organize it. Delete any instructional text.
-
-Succinctly describe the computational narrative.
-
 # Setup
 
-Load packages you will use the analysis.
-Do not install any package here; it is impolite to install packages or change anything outside the project directory without the user's consent.
-```{r setup,message=FALSE}
-library("tidyverse")
+```{r echo=FALSE}
+load("~/2018-research-project/.RData")
 ```
 
-You should also load data, define options or constant variables, or define utility functions in this section.
-
-R markdown will always use the directory of the file as the working directory when rendering. 
-This can be annoying since if the R markdown document is in a subdirectory, this will be different than the project working directory. I suggest using the **here** package for always constructing file paths relative to the root directory. 
-You can read more about this [here](https://github.com/jennybc/here_here).
-```{r paths}
-data_dir <- here::here("data")
-results_dir <- here::here("results")
-src_dir <- here::here("src")
+```{r message=FALSE}
+library(rstan)
+library(loo)
+library(mice)
+library(Kendall)
+library(trend)
+library(forecast)
+library(splines)
+library(e1071)
 ```
-
 
 # Rest of the paper
 
-Organize the rest of the computational narrative as appropriate.
+## Intrduction
 
-Use sections to organize the computational narrative, similar to how you would use them in a research article.
-Do not use sections merely to make text bold.
+The project is about Markov random fields, which is a locally adaptive nonparametric curve fitting method that operates within a fully Bayesian framework. The model assumes that each data point is generated independently with some parametirc models, and the parameters are follow a Markov random fields model, which could, according to the paper, provide a combination of local adaptation and global control. Specificly, my model will look like this:
 
-There should be no extraneous messages, warnings, or errors in the output. Use `message = FALSE` to suppress printing  message output, and resolve all warnings and errors in your code.
+$$
+\begin{aligned}[t]
+y_i &\sim normal(\theta_i, \sigma);\\
+\sigma&\sim exponential(1)\\
+\theta_{j} &= \delta_{j-1} + \theta_{j-1};\\
+\delta_i &\sim normal(0, 1);\\
+\theta_1 &= 5*sd(log(y))*\theta_0 + log(\bar{y});\\
+\theta_0 &\sim normal(0, 1);\\
+\end{aligned}
+$$
+
+For time series decomposition, since it is count variable, in the first fitting I replace $y_i \sim normal(\theta_i, sigma)$ with $y_i \sim Poisson(e^{\theta_i}, \sigma)$. And different priors for $\delta$ are compared in both two fitting. As is well known, Bayes methods treat parameters as random variables. consequently, what we get is posterior distribution of $\theta$. To compare with frequentist methods, I will simply use the median of $\theta$. 
+
+What I want to get in time series decomposition is a nonparametric trend component, which is the main difference with classical methods, like ARIMA. In other word, I will not assume the parametric form of the trend component, like linear trend. On the contrary, I will use GMRF as a smoothing technique to extract seasonal component and trend component sequentially. Prediction cannot be implemented straightforwardly until the trend line is extracted and given a parametric form by some regression methods, like B-splines or SVM. Metrics for model evaluation and comparison is MSE.
+
+
+## Data Description
+
+I apply GMRF to my time series data. Specificly, I have data of bike collision records in downtown Seattle from 01/2004 to 06/2017 and I summarize them by month, so that I have 162 bike collision counts, which is shown as following. I split the data into train set (150 points) and test set (12 points). I decomposite train set into trend part, seasonal part and random part. I treat it as an additive model and decomposit it by doing Markov random fields fitting twice. Furthermore, I compare the results with some classical parametric techniques, like ARIMA, and machine learning techniques, like RNN/LSTM, with regrard to forcasting the test set. I also compare my result with `Prophet`, a Bayesian time series forecasting package written by Facebook.
+
+```{r echo=FALSE}
+plot(TS,ylab='Bike Collision Counts',lwd=2)
+```
+
+
+## Time series decomposition
+
+I apply GMRF fitting into time series decomposition and forcasting. Firstly, I use GMRF to fit a smoothing line. I split the line by bandwidth of 12 (since I know the period is 12 month), and avarage the difference with the mean in each piece. So that I get the seasonal component. Secondly, I minus the raw data with seasonal component and do another GMRF fitting on it, which turns out to be the trend component. For the first fitting, $y$ is Poisson distributed because it is count variable, but for the second fitting I use normal distribution.
+
+I try three priors in first fitting: Gaussian prior, Laplace prior and Horseshoe prior. There is no issue of divergence.
+
+```{r echo=FALSE}
+check_hmc_diagnostics(TT)
+check_hmc_diagnostics(TTL)
+check_hmc_diagnostics(TTH)
+```
+
+And I compare them based on LOO-PSIS-CV (efficient approximate leave-one-out cross-validation for Bayesian models fit using Markov chain Monte Carlo, which uses Pareto smoothed importance sampling, a new procedure for regularizing importance weights.) and WAIC (a generalized version of AIC)[2].
+
+```{r echo=FALSE}
+library(knitr)
+kable(compare(loo1,loo2,loo3))
+kable(compare(waic1,waic2,waic3))
+```
+
+Both LOO-PSIS-CV and WAIC indicate model based on Laplace prior is the best. Thus, I will go on with this model.
+
+The trace of $theta_1$ in the sampling can be shown as following.
+
+```{r echo=FALSE,fig.height=3}
+traceplot(TTL,pars=c('theta[1]'))
+```
+
+The overlapping lines show that the samples from 4 different chains are comming from one common distribution, or that, there is no violation for $theta_1$. The conclusion is also true for other parameters, because as we can see in the following, all the $\hat{R}s$ are close to 1 (The degree of convergence of a random Markov Chain can be estimated using the Gelman-Rubin convergence statistic, 
+$\hat{R}$, based on the stability of outcomes between and within m chains of the same length, n. Values close to one indicate convergence to the underlying distribution. Values greater than 1.1 indicate inadequate convergence.)[3].
+
+```{r echo=FALSE,fig.height=3}
+plot(TTL, plotfun = "ess")
+plot(TTL, plotfun = "rhat")
+```
+
+95% credible interval of $\theta$ can be shown as following.
+
+```{r echo=FALSE}
+plot_trend1(theta=list(postmed=fitted$postmed[1:150],bci.lower=fitted$bci.lower[1:150], bci.upper=fitted$bci.upper[1:150]), obstype="poisson", obsvar=tts, xvar=1:150, main="first GMRF fitting", xlab="time", ylab="count")
+```
+
+In the second fitting, there is no divergence issue either.
+
+```{r echo=FALSE}
+check_hmc_diagnostics(TT1)
+check_hmc_diagnostics(TT2)
+check_hmc_diagnostics(TT3)
+```
+
+I also consider Gaussian prior, Laplace prior and Horseshoe prior. And both LOO-PSIS-CV and WAIC indicate model based on Gaussian prior is the best. Thus, I will focus on this model.
+
+```{r echo=FALSE}
+library(knitr)
+kable(compare(loo4,loo5,loo6))
+kable(compare(waic4,waic5,waic6))
+```
+
+Similarly, here are the results of second fitting.
+
+```{r echo=FALSE,fig.height=3}
+plot(TT1, plotfun = "ess")
+plot(TT1, plotfun = "rhat")
+```
+
+```{r echo=FALSE,fig.height=4}
+traceplot(TT1,pars=c('theta[1]'))
+```
+
+```{r echo=FALSE,fig.height=4}
+traceplot(TT1,pars=c('sigma'))
+```
+
+```{r echo=FALSE}
+plot_trend1(theta=extract_theta(TT1,obstype='normal'), obstype="normal", obsvar=test$y-seasonal, xvar=1:150, main="second GMRF fitting", xlab="time", ylab="")
+```
+
+
+The above blue line is my trend component. After second fitting, my decomposition will look like the following.
+
+```{r echo=FALSE,fig.height=3.5}
+par(mfrow=c(3,1), mar=c(2,1.5,1.5,1), oma=c(2,2,0,0))
+plot(trend,type='l')
+plot(seasonal,type='l')
+plot(random,type='l')
+```
+
+As a comparison, decomposition based on ARIMA looks like the following. Generally speaking, the seasonal part seems to be exactly the same, but my trend line is more smoothing. 
+
+```{r echo=FALSE,fig.height=4}
+par(mfrow=c(1,1))
+plot(decompose(TS))
+```
+
+And decomposition based on `Prophet` looks like the following.
+
+```{r fig.height=3, message=FALSE,echo=FALSE,}
+library(prophet)
+ph<-prophet(data.frame(y=tts, ds=seq(ISOdate(2004,1,1), by = "month", length.out = 150)))
+pfuture <- make_future_dataframe(ph, periods = 12)
+pforecast <- predict(ph, pfuture)
+prophet_plot_components(ph, pforecast)
+```
+
+
+Then, I will go further and compare them with regard to forcasting the last 12 points. Seasonal part seems to be straightforward to use in forcasting. For trend part, firstly I consider a linear extension of trend component. The linear extension is implemented by `lm` function with a step wise chosen by cross validation, that is, I use the last few points to fit a linear regression to predict the future. Secondly, I also try to fit the trend line by B-spline or SVM. And then I sum up the seasonal component with a linear extension of trend component as my prediction.
+
+```{r echo=FALSE,warning=FALSE}
+A0<-mean((theta[151:162]-TS[151:162])^2)
+A1<-mean((predict(lm(y~.,data=data.frame(y=trend[(150-step_width+1):150],x=c((150-step_width+1):150))),
+              newdata=data.frame(x=c(151:162)))+seasonal[139:150]-TS[151:162])^2)
+A2<-mean((seasonal[139:150]+predict(long_line,newdata = data.frame(x=c(151:162)))-TS[151:162])^2)
+A3<-mean((predYsvm+seasonal[139:150]-TS[151:162])^2)
+A4<-mean((ari$mean-TS[151:162])^2)
+A5<-mean((rnn-TS[151:162])^2)
+Ap<-mean((pforecast$trend[151:162]+pforecast$seasonal[151:162]-TS[151:162])^2)
+```
+
+The results of the above forcasting strategy along with other model's prediction, like ARIMA and RNN/LSTM are shown as following. I also show the result of `Prophet`.
+
+```{r echo=FALSE}
+kable(data.frame(Method=c("AUTO-ARIMS","RNN/LSTM","Prophet","GMRF-Simulation","GMRF+LinearExtension","GMRF+BSpline","GMRF+SVM"),MSE=round(c(A4,A5,Ap,A0,A1,A2,A3),1)))
+```
+
+```{r echo=FALSE,warning=FALSE}
+plot(c(151:162),TS[151:162],ylim=c(10,75),type='l',main='Performance of prediction',xlab='time',ylab='count')
+par(new=TRUE)
+plot(c(151:162),ari$mean,ylim=c(10,75),col=2,type='l',main='Performance of prediction',xlab='time',ylab='count')
+par(new=TRUE)
+plot(c(151:162),rnn,ylim=c(10,75),col=3,type='l',main='Performance of prediction',xlab='time',ylab='count')
+par(new=TRUE)
+plot(c(151:162),pforecast$yhat[151:162],ylim=c(10,75),col=4,type='l',main='Performance of prediction',xlab='time',ylab='count')
+par(new=TRUE)
+plot(c(151:162),ylim=c(10,75),predict(lm(y~.,data=data.frame(y=trend[(150-step_width+1):150],x=c((150-step_width+1):150))),newdata=data.frame(x=c(151:162)))+seasonal[139:150],col=5,type='l',main='Performance of prediction',xlab='time',ylab='count')
+par(new=TRUE)
+plot(c(151:162),ylim=c(10,75),seasonal[139:150]+predict(long_line1,newdata = data.frame(x=c(151:162))),col=6,type='l',main='Performance of prediction',xlab='time',ylab='count')
+par(new=TRUE)
+plot(c(151:162),ylim=c(10,75),predYsvm+seasonal[139:150],col=7,type='l',main='Performance of prediction',xlab='time',ylab='count')
+legend('topright', legend=c('Observation','AUTO-ARIMA','RNN/LSTM','Prophet','GMRF+LE','GMRF+BS','GMRF+SVM'), col=c(1:7), lty=1, cex=0.8)
+```
+
+As is shown above, GMRF obviously outperforms the other methods, and using B-splines to fit the trend line seems to be the best choice. The predictions of GMRF with linear extension and SVM are really close to each other. RNN/LSTM and `Prophet` make similar performances. They are well-used models in parctice, for example, `Prophet` is used in many applications across Facebook for producing reliable forecasts for planning and goal setting. The main reason that they are not competitive here is 
+the amount of data is really small, or that, the issue of overfitting.
+
+## Discussion
+
+### Conclusion
+
+As is mentioned above, GMRF is a powerful nonparametric regression method which can also be applied into time series. It has a good chance to catch various characteristic features of interests, like  autocorrelation structure and periodic component. Combining GMRF and B-splines achieves really nice results, which is beyond my proposal. 
+
+In fact, priors have a shrinkage effect, which can also be seen as a kind of regularization. when it comes to MLE, ridge regression is equivalent to Gaussian prior, and Lasso regression is equivalent to Laplace prior. Under Bayesian framework, we are more flexible to choose from different kinds of priors.
+
+When it comes to model structure, GMRF is a realization of partial-pooling model. The connections between $\theta_i$ is limited by distance, which balances local adaptation and global control. A partial-pooling model is always a good idea, bacause it is more flexible than a fully-pooling model and more controllable than a non-pooling model. It is a tradeoff of bias and variance.
+
+### Limitation
+
+The main issue here is computational efficience. Bayesian method is time-consuming. In simulation study, for example, it takes totally about an hour to sample. And Horseshoe prior has a more extreme problem of it than Gaussian prior and Laplace prior. Moreover, if we try funtions like $y=sin(100x)$, divergence issues raise up. 
+
+My idea is to take advantages of both fitting power of Bayesian frameworks and computational efficience of frequentist methos. firstly, we should never let a Bayesian model to deal with a too complicated function fitting. Alternatively, we may use method like B-splines with knots to do a quick pilot fitting, and then run a divide and conquer algorithm with Bayesian model. Secondly, a Bayesian method could be a correction to a frequentist method, and vice versa. Actually, `GMRF+BSpline` is an example of realization. Another idea is to leave a mangeable amount of data for Bayesian model and fit a freqentist model with the rest data. And then include the results of frequentist model as priors. Besides, A general idea of online learning and ensemble learning is also appealing to me.
+
+
+## Reference
+
+[1]Faulkner, James R.; Minin, Vladimir N. Locally Adaptive Smoothing with Markov Random Fields and Shrinkage Priors. Bayesian Anal. 13 (2018), no. 1, 225--252. doi:10.1214/17-BA1050. https://projecteuclid.org/euclid.ba/1487905413
+
+[2]Vehtari, A., Gelman, A., and Gabry, J. (2017a). Practical Bayesian model evaluation using leaveone-out cross-validation and WAIC. Statistics and Computing. 27(5), 1413–1432. doi:10.1007/s11222-
+016-9696-4. (published version, arXiv preprint)
+
+[3]Gelman, A. and D. B. Rubin (1992) Inference from iterative simulation using multiple sequences (with discussion). Statistical Science, 7:457-511
 
 # Original Computational Environment
 
