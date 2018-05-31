@@ -21,25 +21,21 @@ transformed data {
 }
 
 parameters {
-	real zdelta[J+11];
-	real ztheta1;
-	real <lower=0, upper=1> zgam;
+	real delta[J+11];
+	real theta0;
 }
 
 transformed parameters{
 	vector[J+12] theta;
-  real <lower=0> gam;
-	gam = 0.06*tan(zgam*pi()/2);
-	theta[1] = 5*sdy*ztheta1 + muy;
+	theta[1] = 5*sdy*theta0 + muy;
 	for (j in 1:(J+11)){
-	  theta[j+1] = gam*zdelta[j]*sqrt(duxvar1[j]) + theta[j];
+	  theta[j+1] = delta[j]*sqrt(duxvar1[j]) + theta[j];
 	  }
 }
 
 model {
-	zgam ~ uniform(0, 1);
-	ztheta1 ~ normal(0, 1);
-	zdelta ~ normal(0, 1);
+	theta0 ~ normal(0, 1);
+	delta ~ normal(0, 1);
 	for (i in 1:N){
 	  y[i] ~ poisson_log(theta[xrank1[i]]);
 	  }

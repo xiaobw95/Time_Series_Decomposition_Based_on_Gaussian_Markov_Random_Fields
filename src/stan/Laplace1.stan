@@ -31,7 +31,7 @@ transformed parameters{
 model {
   sigma ~ exponential(1);
 	theta0 ~ normal(0, 1);
-	delta ~ normal(0, 1);
+	delta ~ double_exponential(0, 1);
 	for (i in 1:N){
 	  y[i] ~ normal(theta[xrank1[i]], sigma); 
 	  }
