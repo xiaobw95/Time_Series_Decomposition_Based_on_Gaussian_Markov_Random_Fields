@@ -56,6 +56,10 @@ Bike collision records in downtown Seattle from 01/2004 to 06/2017 counted by mo
 - Time series decomposition and forcasting
 
 <p align="center">
+  <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/fig/Second-fitting.png" alt=""/>
+</p>
+
+<p align="center">
   <img src="https://github.com/xiaobw95/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/blob/master/results/fig/Time-series-decomposition.png" alt=""/>
 </p>
 
