@@ -20,12 +20,7 @@ load("~/2018-research-project/.RData")
 ```{r echo=FALSE,message=FALSE}
 library(rstan)
 library(loo)
-library(mice)
-library(Kendall)
-library(trend)
 library(forecast)
-library(splines)
-library(e1071)
 ```
 
 ## Intrduction
@@ -36,13 +31,14 @@ $$
 \begin{aligned}[t]
 y_j &\sim normal(\theta_j, \sigma);\\
 \sigma&\sim exponential(1)\\
-\theta_{j} &= \delta_{j-1} + \rho\theta_{j-1};\\
-\theta_1 &= 5*sd(log(y))*\theta_0 + log(\bar{y});\\
+\theta_{j} &= \rho^1\theta_{j-1} + \delta_{j-1};\\
+\theta_1 &= 5*sd(y)*\theta_0 + \bar{y};\\
 \theta_0 &\sim normal(0, 1);\\
-\rho&\sim normal(0,1)I_{[0,1]}(\rho)\\
-\delta_{j} &= \delta_{j-1} + \delta^1_{j-1};\\
+\rho^1&\sim beta(2,2)\\
+\delta_{j} &= \rho^2\delta_{j-1} + \delta^1_{j-1};\\
 \delta^1_j &\sim normal(0, 1);\\
-\delta_1 &\sim normal(0,10);\\
+\delta_1 &\sim normal(0,1);\\
+\rho^2&\sim beta(2,2)\\
 \end{aligned}
 $$
 
