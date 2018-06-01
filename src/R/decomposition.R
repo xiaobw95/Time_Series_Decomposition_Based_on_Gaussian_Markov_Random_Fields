@@ -1,5 +1,5 @@
 #data input
-load("~/2018-research-project/data/TS.rda")
+load("~/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/data/TS.rda")
 tts<-TS[1:150]
 
 #data preparation for the first fitting
