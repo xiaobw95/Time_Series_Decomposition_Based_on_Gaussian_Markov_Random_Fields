@@ -1,5 +1,5 @@
 #data input
-load("~/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/data/TS.rda")
+load("~/2018-research-project/data/TS.rda")
 tts<-TS[1:150]
 
 #data preparation for the first fitting
@@ -164,5 +164,5 @@ plot(c(151:162),rnn,ylim=c(10,75),col=3,type='l',main='Performance of prediction
 par(new=TRUE)
 plot(c(151:162),pforecast$yhat[151:162],ylim=c(10,75),col=4,type='l',main='Performance of prediction',xlab='time',ylab='count')
 par(new=TRUE)
-plot(c(151:162),theta1[151:160]+seasonal[139:150],ylim=c(10,75),col=5,type='l',main='Performance of prediction',xlab='time',ylab='count')
+plot(c(151:162),theta1[151:162]+seasonal[139:150],ylim=c(10,75),col=5,type='l',main='Performance of prediction',xlab='time',ylab='count')
 legend('topright', legend=c('Observation','AUTO-ARIMA','RNN/LSTM','Prophet','GMRF'), col=c(1:5), lty=1, cex=0.8)
