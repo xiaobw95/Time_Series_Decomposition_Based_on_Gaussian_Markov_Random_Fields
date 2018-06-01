@@ -1,3 +1,7 @@
+#data input
+load("~/2018-research-project/data/TS.rda")
+tts<-TS[1:150]
+
 #data preparation for the first fitting
 test<-list(J=150,y=tts)
 
@@ -28,6 +32,7 @@ niter <- (ntotsamp/nchain)*nthin + nburn
 
 #first fitting with different priors
 #Gaussian prior
+library(rstan)
 TT<-stan('src/stan/Gaussian.stan', data=test, chains=nchain, iter=niter, warmup=nburn, thin=nthin,
          control=list(adapt_delta=0.95, max_treedepth=12))
 #Laplace prior
@@ -86,7 +91,7 @@ TTp<-stan('src/stan/Gaussian_forecast.stan', data=test1, chains=nchain, iter=nit
                     control=list(adapt_delta=0.99, max_treedepth=20))
 TT.N1<-matrix(unlist(extract(TTp,pars=c("theta"))),nrow = 2500, byrow = FALSE)
 theta1<-apply(TT.N1,2,median)
-mean((theta1[151:160]+seasonal[139:150]-TS[151:162])^2)
+mean((theta1[151:162]+seasonal[139:150]-TS[151:162])^2)
 
 #extract trend component
 trend=theta1[1:150]
