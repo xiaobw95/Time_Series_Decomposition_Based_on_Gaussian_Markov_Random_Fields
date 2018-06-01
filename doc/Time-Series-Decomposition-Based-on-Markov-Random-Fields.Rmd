@@ -38,14 +38,14 @@ The project is about Markov random fields, which is a locally adaptive nonparame
 
 $$
 \begin{aligned}[t]
-y_i &\sim normal(\rho\theta_i, \sigma);\\
+y_j &\sim normal(\theta_j, \sigma);\\
 \sigma&\sim exponential(1)\\
-\rho&\sim normal(0,1)I_{[0,1]}(\rho)\\
-\theta_{j} &= \delta_{j-1} + \theta_{j-1};\\
-\delta_{j} &= \delta_{j-1} + \delta^1_{j-1};\\
-\delta^1_i &\sim normal(0, 1);\\
+\theta_{j} &= \delta_{j-1} + \rho\theta_{j-1};\\
 \theta_1 &= 5*sd(log(y))*\theta_0 + log(\bar{y});\\
 \theta_0 &\sim normal(0, 1);\\
+\rho&\sim normal(0,1)I_{[0,1]}(\rho)\\
+\delta_{j} &= \delta_{j-1} + \delta^1_{j-1};\\
+\delta^1_j &\sim normal(0, 1);\\
 \delta_1 &\sim normal(0,10);\\
 \end{aligned}
 $$
