@@ -91,7 +91,7 @@ Bike collision records in downtown Seattle from 01/2004 to 06/2017 counted by mo
 
 ## Build
 
-- `R`: Load [`.RData`](https://drive.google.com/open?id=14_3SQlz6mOArU7uBJEwHzHX5dMWRpzKx) (Or run `src/R/decomposition.R` and save image), open `doc/Time-Series-Decomposition-Based-on-Markov-Random-Fields.Rmd` and knit the file.
+- `R`: Load [`.RData`](https://drive.google.com/open?id=14_3SQlz6mOArU7uBJEwHzHX5dMWRpzKx) (or run `src/R/decomposition.R` and save image), open `doc/Time-Series-Decomposition-Based-on-Markov-Random-Fields.Rmd` and knit the file.
 - `Python`: `python src/Python/ts.py`
 
 ## Reference
