@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Setup
 
 ```{r echo=FALSE}
-load("~/2018-research-project/.RData")
+load("~/Time_Series_Decomposition_Based_on_Gaussian_Markov_Random_Fields/.RData")
 ```
 
 ```{r message=FALSE}
