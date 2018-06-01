@@ -19,7 +19,8 @@ parameters {
 	real theta0;
 	real delta0;
 	real<lower=0.0> sigma;
-	real<lower=0.0, upper=1.0> rho;
+	real<lower=0.0, upper=1.0> rho1;
+	real<lower=0.0, upper=1.0> rho2;
 }
 
 transformed parameters{
@@ -27,20 +28,21 @@ transformed parameters{
 	real delta[J+11];
 	delta[1] = delta0;
 	for (j in 1:(J+10)){
-	  delta[j+1] = delta1[j] + delta[j];
+	  delta[j+1] = delta1[j] + rho2 * delta[j];
 	  }
 	theta[1] = 5*sdy*theta0 + muy;
 	for (j in 1:(J+11)){
-	  theta[j+1] = delta[j] + rho * theta[j];
+	  theta[j+1] = delta[j] + rho1 * theta[j];
 	  }
 }
 
 model {
   sigma ~ exponential(1);
 	theta0 ~ normal(0, 1);
-	delta0 ~ normal(0, 10);
+	delta0 ~ normal(0, 1);
 	delta1 ~ normal(0, 1);
-	rho ~ normal(0, 1);
+	rho1 ~ beta(2, 2);
+	rho2 ~ beta(2, 2);
 	for (i in 1:N){
 	  y[i] ~ normal(theta[xrank1[i]], sigma);
 	  }
