@@ -25,29 +25,39 @@ plot_trend1(theta=extract_theta(TTL,obstype='poisson'),
             obstype="poisson", obsvar=TS, xvar=1:162,
             main="first GMRF fitting", xlab="time", ylab="count")
 
+# #second fitting
+# check_hmc_diagnostics(TT1)
+# check_hmc_diagnostics(TT2)
+# check_hmc_diagnostics(TT3)
+#
+# log_lik_4 <- extract_log_lik(TT1)
+# log_lik_5 <- extract_log_lik(TT2)
+# log_lik_6 <- extract_log_lik(TT3)
+# loo4 <- loo(log_lik_4)
+# loo5 <- loo(log_lik_5)
+# loo6 <- loo(log_lik_6)
+# compare(loo4,loo5,loo6)
+#
+# waic4<-waic(log_lik_4)
+# waic5<-waic(log_lik_5)
+# waic6<-waic(log_lik_6)
+# compare(waic4,waic5,waic6)
+#
+# traceplot(TT1,pars=c('theta[1]'))
+# traceplot(TT1,pars=c('sigma'))
+# plot(TT1, plotfun = "rhat")
+# plot(TT1, plotfun = "ess")
+#
+# plot_trend1(theta=extract_theta(TT1,obstype='normal'),
+#             obstype="normal", obsvar=TS, xvar=1:150,
+#             main="second GMRF fitting", xlab="time", ylab="count")
+
 #second fitting
-check_hmc_diagnostics(TT1)
-check_hmc_diagnostics(TT2)
-check_hmc_diagnostics(TT3)
-
-log_lik_4 <- extract_log_lik(TT1)
-log_lik_5 <- extract_log_lik(TT2)
-log_lik_6 <- extract_log_lik(TT3)
-loo4 <- loo(log_lik_4)
-loo5 <- loo(log_lik_5)
-loo6 <- loo(log_lik_6)
-compare(loo4,loo5,loo6)
-
-waic4<-waic(log_lik_4)
-waic5<-waic(log_lik_5)
-waic6<-waic(log_lik_6)
-compare(waic4,waic5,waic6)
-
-traceplot(TT1,pars=c('theta[1]'))
-traceplot(TT1,pars=c('sigma'))
-plot(TT1, plotfun = "rhat")
-plot(TT1, plotfun = "ess")
-
-plot_trend1(theta=extract_theta(TT1,obstype='normal'),
-            obstype="normal", obsvar=TS, xvar=1:150,
-            main="second GMRF fitting", xlab="time", ylab="count")
+check_hmc_diagnostics(TTp)
+plot(TTp, plotfun = "ess")
+plot(TTp, plotfun = "rhat")
+traceplot(TTp,pars=c('theta[1]'))
+traceplot(TTp,pars=c('sigma'))
+plot_trend1(theta=extract_theta(TTp,obstype='normal'),
+            obstype="normal", obsvar=c(test$y-seasonal,TS[151:162]-seasonal[139:150]), xvar=1:162,
+            main="second GMRF fitting", xlab="time", ylab="")
