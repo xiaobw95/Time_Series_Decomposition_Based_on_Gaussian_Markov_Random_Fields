@@ -14,7 +14,7 @@ data {
   int<lower=0> N; // number of observations
 	int<lower=0> J; // number of grid cells
   vector [N] xvar1;  //locations for observations
-  vector [J+11] duxvar1;  //distances between unique locations
+  vector [J-1] duxvar1;  //distances between unique locations
   int<lower=0> xrank1[N]; //rank order of location for each obs
   int <lower=0> y[N];  // response for obs i
 }
@@ -33,7 +33,7 @@ transformed data {
 }
 
 parameters {
-	real delta_raw[J+11];
+	real delta_raw[J-1];
 	real theta0;
 	real<lower=0> tau_s1;
   real<lower=0> tau_s2;
@@ -42,13 +42,13 @@ parameters {
 }
 
 transformed parameters{
-	vector[J+12] theta;
-	real delta[J+11];
+	vector[J] theta;
+	real delta[J-1];
 	theta[1] = 5*sdy*theta0 + muy;
-	for (j in 1:(J+11)){
+	for (j in 1:(J-1)){
 	  delta[j] = hs_prior_lp(tau_s1, tau_s2, tau1, tau2) * delta_raw[j];
 	  }
-	for (j in 1:(J+11)){
+	for (j in 1:(J-1)){
 	 	theta[j+1] = delta[j]*sqrt(duxvar1[j]) + theta[j];
 	 	}
 }
