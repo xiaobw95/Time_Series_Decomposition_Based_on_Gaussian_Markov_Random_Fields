@@ -34,14 +34,14 @@ The project is about Markov random fields, which is a locally adaptive nonparame
 
 $$
 \begin{aligned}[t]
-y_i &\sim normal(\rho\theta_i, \sigma);\\
+y_j &\sim normal(\theta_j, \sigma);\\
 \sigma&\sim exponential(1)\\
-\rho&\sim normal(0,1)I_{[0,1]}(\rho)\\
-\theta_{j} &= \delta_{j-1} + \theta_{j-1};\\
-\delta_{j} &= \delta_{j-1} + \delta^1_{j-1};\\
-\delta^1_i &\sim normal(0, 1);\\
+\theta_{j} &= \delta_{j-1} + \rho\theta_{j-1};\\
 \theta_1 &= 5*sd(log(y))*\theta_0 + log(\bar{y});\\
 \theta_0 &\sim normal(0, 1);\\
+\rho&\sim normal(0,1)I_{[0,1]}(\rho)\\
+\delta_{j} &= \delta_{j-1} + \delta^1_{j-1};\\
+\delta^1_j &\sim normal(0, 1);\\
 \delta_1 &\sim normal(0,10);\\
 \end{aligned}
 $$
@@ -50,7 +50,7 @@ where the trace of $\theta$ is trend component.
 
 The idea of Bayesian Markov random fields comes from the paper in the reference[1]. This project includes the following two parts, simulation study of Gaussian Markov random fileds (GMRF) fitting and time series decomposition based on Markov random fiels. For time series decomposition, since it is count variable, in the first fitting I replace $y_i \sim normal(\theta_i, sigma)$ with $y_i \sim Poisson(e^{\theta_i})$. And different priors for $\delta$ are compared in both two fitting. As is well known, Bayes methods treat parameters as random variables. consequently, what we get is posterior distribution of $\theta$. To compare with frequentist methods, I will simply use the median of $\theta$. 
 
-What I want to get in time series decomposition is a nonparametric trend component, which is the main difference with classical methods, like ARIMA. In other word, I will not assume the parametric form of the trend component, like linear trend. Furthermore, I compare the results with some classical parametric techniques, like ARIMA, and machine learning techniques, like RNN/LSTM, with regrard to forecasting. Metrics for model evaluation and comparison is MSE.
+What I want to get in time series decomposition is a nonparametric trend component, which is the main difference with classical methods, like ARIMA. In other word, I will not assume the parametric form of the trend component, like linear trend. Furthermore, I compare the results with some classical parametric techniques, like ARIMA, and machine learning techniques, like RNN/LSTM, with regrard to forecasting. Metrics for model evaluation and comparison is MSE. I make prediction straightforwardly by simulating data from Bayesian model, which is different from my original idea in proposal.
 
 
 
@@ -216,7 +216,7 @@ As is shown above, GMRF obviously outperforms the other methods. RNN/LSTM and `P
 
 ### Conclusion
 
-As is mentioned above, GMRF is a powerful nonparametric regression method which can also be applied into time series. It has a good chance to catch various characteristic features of interests, like  autocorrelation structure and periodic component.
+As is mentioned above, GMRF is a powerful nonparametric regression method which can also be applied into time series. It has a good chance to catch various characteristic features of interests, like  autocorrelation structure and periodic component. 
 
 In fact, priors have a shrinkage effect, which can also be seen as a kind of regularization. when it comes to MLE, ridge regression is equivalent to Gaussian prior, and Lasso regression is equivalent to Laplace prior. Under Bayesian framework, we are more flexible to choose from different kinds of priors.
 
