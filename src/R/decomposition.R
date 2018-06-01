@@ -7,7 +7,7 @@ uxv1 <- unique(test$xvar1)
 ruxv1 <- rank(uxv1)
 m.xv <- cbind(1:length(uxv1), uxv1, ruxv1)
 m.xv <- m.xv[order(m.xv[,2]),]
-duxv1 <- rep(1,161)
+duxv1 <- rep(1,149)
 suxv1 <- sort(uxv1)
 rnk.xv <- integer(test$N)
 for (ii in 1:test$N){
