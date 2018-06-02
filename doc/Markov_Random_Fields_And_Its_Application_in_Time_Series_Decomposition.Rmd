@@ -25,7 +25,7 @@ library(forecast)
 
 ## Intrduction
 
-The project is about Markov random fields, which is a locally adaptive nonparametric curve fitting method that operates within a fully Bayesian framework. The model assumes that each data point is generated independently with some parametirc models, and the parameters are follow a Markov random fields model, which could, according to the paper, provide a combination of local adaptation and global control. Specificly, after removing seasonal component, my trend model used for forecasting looks like this:
+The project is about Markov random fields, which is a locally adaptive nonparametric curve fitting method that operates within a fully Bayesian framework. The model assumes that each data point is generated independently with some parametirc models, and the parameters are follow a Markov random fields model, which could, according to the paper[1], provide a combination of local adaptation and global control. Specificly, after removing seasonal component, my trend model used for forecasting looks like this:
 
 $$
 \begin{aligned}[t]
