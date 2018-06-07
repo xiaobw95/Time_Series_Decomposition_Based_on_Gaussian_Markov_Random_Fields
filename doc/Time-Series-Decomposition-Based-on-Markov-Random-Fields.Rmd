@@ -82,13 +82,13 @@ kable(compare(waic1,waic2,waic3))
 
 Both LOO-PSIS-CV and WAIC indicate model based on Laplace prior is the best. Thus, I will go on with this model.
 
-The trace of $theta_1$ in the sampling can be shown as following.
+The trace of $\theta_1$ in the sampling can be shown as following.
 
 ```{r echo=FALSE,fig.height=3}
 traceplot(TTL,pars=c('theta[1]'))
 ```
 
-The overlapping lines show that the samples from 4 different chains are comming from one common distribution, or that, there is no violation for $theta_1$. The conclusion is also true for other parameters. And as we can see in the following, all the $\hat{R}s$ are close to 1. Effective sample size is also large enough.
+The overlapping lines show that the samples from 4 different chains are comming from one common distribution, or that, there is no violation for $\theta_1$. The conclusion is also true for other parameters. And as we can see in the following, all the $\hat{R}s$ are close to 1. Effective sample size is also large enough.
 
 ```{r echo=FALSE,fig.height=3}
 plot(TTL, plotfun = "ess")
@@ -157,7 +157,7 @@ pforecast <- predict(ph, pfuture)
 prophet_plot_components(ph, pforecast)
 ```
 
-Then, I will go further and compare them with regard to forecasting the last 12 points. Seasonal part seems to be straightforward to use in forecasting. For trend part, I use posterior median of $theta$. And then I sum up the seasonal component with a linear extension of trend component as my prediction.
+Then, I will go further and compare them with regard to forecasting the last 12 points. Seasonal part seems to be straightforward to use in forecasting. For trend part, I use posterior median of $\theta$. And then I sum up the seasonal component with a linear extension of trend component as my prediction.
 
 ```{r echo=FALSE,warning=FALSE}
 A1<-mean((theta1[151:160]+seasonal[139:150]-TS[151:162])^2)
