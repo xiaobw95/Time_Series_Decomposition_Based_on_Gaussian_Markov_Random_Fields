@@ -2,7 +2,7 @@
 
 This contains replication materials for the UW CSSS/STAT 564 project of Bowen Xiao (some materials of course projects of STAT 504 and STAT 527 are also included).
 
-The project is about time series decomposition based on markov random fields, which is a locally adaptive nonparametric curve fitting method that operates within a fully Bayesian framework. I decomposited a time series into trend part, seasonal part and random part by treating it as an additive model and doing markov random fields fitting twice. I also compared the results with some classical parametric techniques, like ARIMA, and machine learning techniques, like RNN/LSTM, with regard to forcasting.
+The project is about time series decomposition based on markov random fields, which is a locally adaptive nonparametric curve fitting method that operates within a fully Bayesian framework. I decomposited a time series into trend part, seasonal part and random part by treating it as an additive model and doing markov random fields fitting twice. I also compared the results with some classical parametric techniques, like ARIMA, machine learning techniques, like RNN/LSTM, and Prophet, which is used in many applications across Facebook for producing reliable forecasts for planning and goal setting, with regard to forcasting.
 
 Simulation study of GMRF and spatial model selection are also included.
 
